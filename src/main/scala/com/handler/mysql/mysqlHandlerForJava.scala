@@ -7,7 +7,7 @@ import java.sql.{Connection, DriverManager, ResultSet, Statement}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-object mysqlHandler {
+object mysqlHandlerForJava {
   val userName: String = getPropertiesUtil.getProperties("spark-config.properties", "userName")
   val passWord: String = getPropertiesUtil.getProperties("spark-config.properties", "passWord")
   val url: String = getPropertiesUtil.getProperties("spark-config.properties", "url")
