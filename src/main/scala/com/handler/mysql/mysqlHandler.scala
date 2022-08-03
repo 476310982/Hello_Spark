@@ -46,14 +46,17 @@ object mysqlHandler {
     schemaMap
   }
 
-  def testArgs(args: String*): Unit = {
-    println(args.length)
-    args.foreach(println)
-  }
-
-  def queryTable(database: String, tableName: String, columns: String*): Unit = {
+  def queryTable(database: String, tableName: String, limitNum: Int, whereSql: String, columns: String*): Unit = {
     val list: ListBuffer[String] = ListBuffer()
-    val sql = "select " + columns.mkString(",") + " from " + database + "." + tableName + ";"
+    var sql = "select " + columns.mkString(",") + " from " + database + "." + tableName
+    if (!whereSql.equals("")) {
+      sql = sql + " where " + whereSql
+    }
+    if (limitNum == -1) {
+      sql = sql + ";"
+    } else {
+      sql = sql + " limit " + limitNum + ";"
+    }
     println(sql)
     try {
       Class.forName("com.mysql.jdbc.Driver")
@@ -63,11 +66,14 @@ object mysqlHandler {
       println(columns.mkString("\t"))
       while (resultSet.next()) {
         list.clear()
-        for (i <- 1 to resultSet.getMetaData.getColumnCount) {
-          list.insert(i-1, resultSet.getObject(i).toString)
-
+        for (i <- columns) {
+          try {
+            print(resultSet.getObject(i).toString + "\t")
+          } catch {
+            case ex: NullPointerException => list.append("null")
+          }
         }
-//        println(list.mkString("\t"))
+        println(list.mkString("\t"))
       }
     }
     catch {
@@ -78,11 +84,111 @@ object mysqlHandler {
     }
   }
 
+  def execUpdate(database: String, tableName: String, opt: String, whereSQL: String): Unit = {
+    var sql = ""
+    if (opt.toLowerCase().equals("update")) {
+      sql = opt + " " + database + "." + tableName + " " + whereSQL + ";"
+    } else if (opt.toLowerCase().equals("delete")) {
+      sql = opt + " from " + database + "." + tableName + " where " + whereSQL + ";"
+    }
+    println(sql)
+    try {
+      Class.forName("com.mysql.jdbc.Driver")
+      val connection: Connection = DriverManager.getConnection(url, userName, passWord)
+      val statement: Statement = connection.createStatement()
+      val rs = statement.executeUpdate(sql)
+      println("执行语句成功")
+    }
+    catch {
+      case e: MySQLSyntaxErrorException => {
+        println(e.getMessage)
+        println("执行语句失败")
+      }
+      case e: Exception => e.printStackTrace()
+    }
+  }
 
   def main(args: Array[String]): Unit = {
-    queryTable("test", "emp", "empid", "empname", "sex")
+    //    execUpdate("test", "emp", "update","set salary = 1000000 where empid = 1000")
 
-
+    queryTable("test", "emp", 1, "empid = 1000", "empid", "empname", "sex", "salary")
+    //    try {
+    //      Class.forName("com.mysql.jdbc.Driver")
+    //      val connection: Connection = DriverManager.getConnection(url, userName, passWord)
+    //      val statement: Statement = connection.createStatement()
+    //      val sql = "select * from emp limit 1;"
+    //      val resultSet: ResultSet = statement.executeQuery(sql)
+    //      val count: Int = resultSet.getMetaData.getColumnCount
+    //      println("number of columns :" + count)
+    //      var metaData = resultSet.getMetaData
+    //      for (i <- 1 to metaData.getColumnCount) {
+    //
+    //        // 获得所有列的数目及实际列数
+    //        val columnCount = metaData.getColumnCount
+    //        // 获得指定列的列名
+    //        val columnName = metaData.getColumnName(i)
+    //        // 获得指定列的列值
+    //        val columnType = metaData.getColumnType(i)
+    //        // 获得指定列的数据类型名
+    //        val columnTypeName = metaData.getColumnTypeName(i)
+    //        // 所在的Catalog名字
+    //        val catalogName = metaData.getCatalogName(i)
+    //        // 对应数据类型的类
+    //        val columnClassName = metaData.getColumnClassName(i)
+    //        // 在数据库中类型的最大字符个数
+    //        val columnDisplaySize = metaData.getColumnDisplaySize(i)
+    //        // 默认的列的标题
+    //        val columnLabel = metaData.getColumnLabel(i)
+    //        // 获得列的模式
+    //        val schemaName = metaData.getSchemaName(i)
+    //        // 某列类型的精确度(类型的长度)
+    //        val precision = metaData.getPrecision(i)
+    //        // 小数点后的位数
+    //        val scale = metaData.getScale(i)
+    //        // 获取某列对应的表名
+    //        val tableName = metaData.getTableName(i)
+    //        // 是否自动递增
+    //        val isAutoInctement = metaData.isAutoIncrement(i)
+    //        // 在数据库中是否为货币型
+    //        val isCurrency = metaData.isCurrency(i)
+    //        // 是否为空
+    //        val isNullable = metaData.isNullable(i)
+    //        // 是否为只读
+    //        val isReadOnly = metaData.isReadOnly(i)
+    //        // 能否出现在where中
+    //        val isSearchable = metaData.isSearchable(i)
+    //
+    //        println("获得列 " + i + " 所在的 Catalog 名字（库名）:" + catalogName)
+    //        println("获得列 " + i + " 对应的表名:" + tableName)
+    //        println("获得列 " + i + " 的字段名称:" + columnName)
+    //        println("获得列 " + i + " 的数据类型名:" + columnTypeName)
+    //        println("获得列 " + i + " 对应数据类型的 Java 类:" + columnClassName)
+    //
+    //        println("获得列 " + i + " 的类型,返回 SqlType 中的编号:" + columnType)
+    //        println("获得列 " + i + " 在数据库中类型的最大字符个数:" + columnDisplaySize)
+    //        println("获得列 " + i + " 的默认的列的标题:" + columnLabel)
+    //        println("获得列 " + i + " 的模式:" + schemaName)
+    //        println("获得列 " + i + " 类型的精确度(类型的长度):" + precision)
+    //        println("获得列 " + i + " 小数点后的位数:" + scale)
+    //        println("获得列 " + i + " 是否自动递增:" + isAutoInctement)
+    //        println("获得列 " + i + " 在数据库中是否为货币型:" + isCurrency)
+    //        println("获得列 " + i + " 是否为空:" + isNullable)
+    //        println("获得列 " + i + " 是否为只读:" + isReadOnly)
+    //        println("获得列 " + i + " 能否出现在 where 中:" + isSearchable)
+    //        println()
+    //      }
+    //      //      while (resultSet.next()) {
+    //      //        println("empid = %s,empname = %s".format(resultSet.getInt("empid"), resultSet.getString("empname")))
+    //      //      }
+    //
+    //    } catch {
+    //      case ex: MySQLIntegrityConstraintViolationException => {
+    //        println("主键不唯一")
+    //        println("更新失败")
+    //      }
+    //      case ex: Exception => ex.printStackTrace()
+    //    }
+    //
   }
 }
 
