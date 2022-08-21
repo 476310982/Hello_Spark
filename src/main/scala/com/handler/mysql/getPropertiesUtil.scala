@@ -3,13 +3,19 @@ package com.handler
 import java.util.Properties
 
 object getPropertiesUtil {
+  val properties = new Properties()
 
   def getProperties(fileName: String, key: String): String = {
-    val properties = new Properties()
     val inputStream = getPropertiesUtil.getClass.getClassLoader.getResourceAsStream(fileName)
     properties.load(inputStream)
     val value: String = properties.get(key).toString
     value
+  }
+
+  def getProperties (fileName: String): Properties = {
+    val inputStream = getPropertiesUtil.getClass.getClassLoader.getResourceAsStream(fileName)
+    properties.load(inputStream)
+    properties
   }
 
   //  def setProperties(fileName:String,key:String,value:String): Unit ={
